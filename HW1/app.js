@@ -1,27 +1,32 @@
 const fs = require('fs'),
     path = require('path'),
+    dir = process.cwd(),
+    //dir = './',
     readline = require('readline')
 ;
 
 let rl;
 let args;
+let shouldDelete = false;
+let pathSep = path.sep;
 
 init = () => {
     args = process.argv.slice(2) || [];
+    console.log('dir', dir);
+
     rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
 
     process.on('exit', () => console.log('Завершение программы.'));
-
 };
 
 main = () => {
     if(args && args.length <= 3 && args.length >= 2){
-        console.log(args);
+        let flag = !!(args[2] && args[2] === 'y');
+        copy(args, flag);
     }else{
-        //console.log('Неверное количество входных данных.\nОжидается ввод исходной папки, конечной папки и флага удаления исходной папки (y/n, необязательно)');
         askFolders();
     }
 };
@@ -41,8 +46,6 @@ askFolders = () => {
             console.log('Папки не заданы, повторите ввод. ');
             askFolders();
         }
-
-        //rl.close();
     });
 };
 
@@ -59,8 +62,46 @@ askFlag = (folders) => {
 };
 
 copy = (folders, flag) => {
-    console.log('Копируем из \'', folders[0], '\' в \'', folders[1], '\'', flag ? ('и удаляем \' ' + folders[0] + ' \'') : '');
-    process.exit(0);
+    //console.log('Копируем из \'', folders[0], '\' в \'', folders[1], '\'', flag ? ('и удаляем \' ' + folders[0] + ' \'') : '');
+    let [srcPath, destPath] = folders;
+
+    findFiles(path.join(dir, srcPath), path.join(dir, destPath), flag);
+};
+
+findFiles = (dir, dest) => {
+    fs.readdir(dir, (err, files) => {
+        if(err) throw err;
+
+        files.forEach((fileName, i) => {
+            let filePath = [dir, fileName].join(pathSep);
+
+            fs.stat(filePath, (err, fileStat) => {
+                if(err) throw err;
+
+                if(fileStat.isDirectory()){
+                    findFiles(filePath, dest);
+                }else{
+                    putFile(filePath, fileName, dest);
+                }
+            });
+        });
+    });
+};
+
+putFile = (filePath, fileName, destPath) => {
+    let letter = fileName.substr(0, 1).toUpperCase();
+    destPath = [destPath, letter, fileName].join(pathSep);
+
+    fs.readFile(filePath, (err, data) => {
+        fs.writeFile(destPath, data, (err) => {
+            if(err) throw err;
+            console.log('written', destPath);
+        });
+    });
+};
+
+readFileCallbackFn = (err, data) => {
+    if(err) throw err;
 };
 
 init();
