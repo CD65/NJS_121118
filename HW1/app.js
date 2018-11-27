@@ -92,16 +92,23 @@ putFile = (filePath, fileName, destPath) => {
     let letter = fileName.substr(0, 1).toUpperCase();
     destPath = [destPath, letter, fileName].join(pathSep);
 
-    fs.readFile(filePath, (err, data) => {
-        fs.writeFile(destPath, data, (err) => {
-            if(err) throw err;
-            console.log('written', destPath);
-        });
-    });
-};
+    console.log(filePath, ' -> ', destPath);
 
-readFileCallbackFn = (err, data) => {
-    if(err) throw err;
+    let srcFile = fs.createReadStream(filePath);
+    let destFile = fs.createWriteStream(destPath);
+
+    srcFile.on('error', (err) => {
+        console.log('src err', err);
+    });
+    srcFile.on('end', (err, a) => {
+        console.log('src end', err, a);
+    });
+
+    destFile.on('error', (err) => {
+        console.log('dest err', err);
+    });
+
+    srcFile.pipe(destFile);
 };
 
 init();
