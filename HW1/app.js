@@ -23,10 +23,13 @@ init = () => {
 
 main = () => {
     let FA = [];
+    let FPA = [];
+
     //считываем входные данные
     if(args && args.length <= 3 && args.length >= 2){
         const [sDir, dDir, flag] = args;
         shouldDelete = flag === 'y';
+        FPA.push(sDir);
         findAndCopy(sDir, dDir);
     }else{
         askFolders();
@@ -34,16 +37,20 @@ main = () => {
 
     function findAndCopy(srcDir, destDir){
         //console.log('Копируем из \'', srcDir, '\' в \'', destDir, '\'', shouldDelete ? ('и удаляем \' ' + srcDir + ' \'') : '');
+        //console.log(srcDir);
         fs.readdir(srcDir, (err, files) => {
             if(err) throw err;
 
-            files.forEach((fileName) => {
+            files.forEach((fileName, i, arr) => {
+                //console.log(fileName, i, arr);
                 let filePath = [srcDir, fileName].join(pathSep);
 
                 fs.stat(filePath, (err, fileStat) => {
                     if(err) throw err;
 
                     if(fileStat.isDirectory()){
+                        // запоминаем папку
+                        FPA.push(filePath);
                         findAndCopy(filePath, destDir);
                     }else{
                         let letter = fileName.substr(0, 1).toUpperCase();
@@ -52,6 +59,7 @@ main = () => {
 
                         FA.push(fileName);
 
+                        // создаем директорию в папке назначения и копируем в файл
                         fs.mkdir(dFolder, {recursive: true}, (err) => {
                             if(err) throw err;
 
@@ -60,14 +68,88 @@ main = () => {
 
                             srcStream.pipe(destStream);
 
-                            destStream.on('finish', () => {
+                            // завершение копирования файла
+                            destStream.on('unpipe', () => {
+                                //console.log('copy', srcStream.path, '=>', destStream.path);
+                                // удаление исходного файла
+                                if(shouldDelete){
+                                    fs.unlink(srcStream.path, err => {
+                                        if(err) throw err;
+                                    });
+                                }
+
+                                // контроль копирования файлов
+                                processControl(FA, fileName, delFolders);
+                                // let idx = FA.indexOf(fileName);
+                                // if(idx !== -1){
+                                //     FA.splice(idx, 1);
+                                //     if(!FA.length){
+                                //         console.log('Копирование завершено.');
+                                //         if(shouldDelete){
+                                //             delFolders(FPA.reverse());
+                                //         }else{
+                                //             process.exit();
+                                //         }
+                                //     }
+                                // }
+                            });
+                        });
+                    }
+                });
+            });
+        });
+    }
+
+    /*function findAndCopy(srcDir, destDir){
+        //console.log('Копируем из \'', srcDir, '\' в \'', destDir, '\'', shouldDelete ? ('и удаляем \' ' + srcDir + ' \'') : '');
+        //console.log(srcDir);
+        fs.readdir(srcDir, (err, files) => {
+            if(err) throw err;
+
+            files.forEach((fileName, i, arr) => {
+                //console.log(fileName, i, arr);
+                let filePath = [srcDir, fileName].join(pathSep);
+
+                fs.stat(filePath, (err, fileStat) => {
+                    if(err) throw err;
+
+                    if(fileStat.isDirectory()){
+                        // запоминаем папку
+                        FPA.push(filePath);
+                        findAndCopy(filePath, destDir);
+                    }else{
+                        let letter = fileName.substr(0, 1).toUpperCase();
+                        let dFolder = [destDir, letter].join(pathSep);
+                        let srcStream = fs.createReadStream(filePath);
+
+                        FA.push(fileName);
+
+                        // создаем директорию в папке назначения и копируем в файл
+                        fs.mkdir(dFolder, {recursive: true}, (err) => {
+                            if(err) throw err;
+
+                            let dFilePath = [dFolder, fileName].join(pathSep);
+                            let destStream = fs.createWriteStream(dFilePath);
+
+                            srcStream.pipe(destStream);
+
+                            // завершение копирования файла
+                            destStream.on('unpipe', () => {
+                                //console.log('copy', srcStream.path, '=>', destStream.path);
+                                // удаление исходного файла
+                                if(shouldDelete){
+                                    fs.unlink(srcStream.path, err => {
+                                        if(err) throw err;
+                                    });
+                                }
+
+                                // контроль копирования файлов
                                 let idx = FA.indexOf(fileName);
-                                console.log('copy', srcStream.path, '=>', destStream.path);
                                 if(idx !== -1){
                                     FA.splice(idx, 1);
-
                                     if(!FA.length){
                                         console.log('Копирование завершено.');
+                                        console.log('Папки ', FPA);
                                         process.exit();
                                     }
                                 }
@@ -77,6 +159,33 @@ main = () => {
                 });
             });
         });
+    }*/
+
+    function delFolders(arr){
+        arr.forEach((dir) => {
+            fs.rmdir(dir, err => {
+                if(err) throw err;
+                console.log(dir, 'удалено');
+                // контроль удаления директорий
+                processControl(arr, dir);
+            });
+        });
+    }
+
+    function processControl(arr, key, callback){
+        let idx = arr.indexOf(key);
+        if(idx !== -1){
+            arr.splice(idx, 1);
+            if(!arr.length){
+                if(callback){
+                    console.log('Копирование завершено.');
+                    callback(FPA.reverse());
+                }else{
+                    console.log('Удаление завершено.');
+                    process.exit();
+                }
+            }
+        }
     }
 
     function askFolders(){
