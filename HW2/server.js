@@ -16,18 +16,42 @@ let currentDate;
 process.on('exit', () => console.log('Завершение программы.'));
 
 app.get('/', function(req, res, next){
+    console.log('get');
     //console.log('req', req.query);
     //console.log('req', res);
     res.send('Привет!<br />' +
         'GET запрос инициировал процессы на стороне сервера,<br />' +
         'примерно через ' + STOP + ' мс здесь будет ответ.<br />' +
-        'Ждите...<br />');
+        'Ждите...<br />' +
+        '<script>' +
+            '(function(){' +
+                'window.location = window.location.origin + "?page=result_await"' +
+            '})()' +
+        '</script>');
 
+    /*let TID = setInterval(() => {
+        currentDate = new Date();
+        console.log(currentDate);
+    }, INTERVAL);*/
+
+    /*let STOP_TID = setTimeout(() => {
+        clearInterval(TID);
+        console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
+        next();
+        clearTimeout(STOP_TID);
+        process.exit();
+    }, STOP);*/
+}, function(){
+    //console.log('next fn', this);
+    //res.send('Дата и время на момент остановки таймера (UTC): ' + currentDate);
+});
+
+app.get('/?page=result_await', function(req, res, next){
+    console.log('await');
     let TID = setInterval(() => {
         currentDate = new Date();
         console.log(currentDate);
     }, INTERVAL);
-
     let STOP_TID = setTimeout(() => {
         clearInterval(TID);
         console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
@@ -35,9 +59,6 @@ app.get('/', function(req, res, next){
         clearTimeout(STOP_TID);
         process.exit();
     }, STOP);
-}, function(){
-    console.log('next fn', this);
-    res.send('Дата и время на момент остановки таймера (UTC): ' + currentDate);
 });
 
 app.listen(3000, function(){
