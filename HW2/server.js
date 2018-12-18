@@ -6,6 +6,7 @@ console.log('args', args);
 
 const INTERVAL = args[0] || process.env.INTERVAL || 1000;
 const STOP = args[1] || process.env.STOP || 5000;
+const PORT = 3030;
 
 //console.log('process.env', process.env);
 console.log('INTERVAL', INTERVAL);
@@ -15,52 +16,58 @@ let currentDate;
 
 process.on('exit', () => console.log('Завершение программы.'));
 
-app.get('/', function(req, res, next){
-    console.log('get');
-    //console.log('req', req.query);
-    //console.log('req', res);
-    res.send('Привет!<br />' +
-        'GET запрос инициировал процессы на стороне сервера,<br />' +
-        'примерно через ' + STOP + ' мс здесь будет ответ.<br />' +
-        'Ждите...<br />' +
-        '<script>' +
-            '(function(){' +
-                'window.location = window.location.origin + "?page=result_await"' +
-            '})()' +
-        '</script>');
+let connectionCount = 0;
 
-    /*let TID = setInterval(() => {
-        currentDate = new Date();
-        console.log(currentDate);
-    }, INTERVAL);*/
+/*app.use(function (req, res, next) {
+    connectionCount++;
 
-    /*let STOP_TID = setTimeout(() => {
-        clearInterval(TID);
-        console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
-        next();
-        clearTimeout(STOP_TID);
-        process.exit();
-    }, STOP);*/
-}, function(){
-    //console.log('next fn', this);
-    //res.send('Дата и время на момент остановки таймера (UTC): ' + currentDate);
-});
-
-app.get('/?page=result_await', function(req, res, next){
-    console.log('await');
     let TID = setInterval(() => {
         currentDate = new Date();
-        console.log(currentDate);
+        console.log(currentDate, connectionCount);
     }, INTERVAL);
+
     let STOP_TID = setTimeout(() => {
         clearInterval(TID);
         console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
-        next();
+        connectionCount--;
         clearTimeout(STOP_TID);
-        process.exit();
+        next();
     }, STOP);
 });
 
-app.listen(3000, function(){
-    console.log('Server started at localhost:3000');
+app.get('/', function(req, res, next){
+    res.send('Дата и время на момент остановки таймера: ' + currentDate);
+    next();
+}, function(req, res){
+    console.log('next', connectionCount);
+    if(connectionCount === 0){
+        process.exit();
+    }
+});*/
+
+app.get('/', function(req, res){
+    connectionCount++;
+
+    let TID = setInterval(() => {
+        currentDate = new Date();
+        console.log(currentDate, connectionCount);
+    }, INTERVAL);
+
+    let STOP_TID = setTimeout(() => {
+        clearInterval(TID);
+        console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
+        connectionCount--;
+
+        res.send('Дата и время на момент остановки таймера: ' + currentDate);
+        clearTimeout(STOP_TID);
+
+        if(connectionCount === 0){
+            process.exit();
+        }
+    }, STOP);
+
+});
+
+app.listen(PORT, function(){
+    console.log('Server started at localhost:' + PORT);
 });
