@@ -7,58 +7,43 @@ console.log('args', args);
 const INTERVAL = args[0] || process.env.INTERVAL || 1000;
 const STOP = args[1] || process.env.STOP || 5000;
 
-//console.log('process.env', process.env);
 console.log('INTERVAL', INTERVAL);
 console.log('STOP', STOP);
 
 let currentDate;
+let i = 0; //кол-во запросов ожидающих ответ (в моменте)
 
 process.on('exit', () => console.log('Завершение программы.'));
 
-app.get('/', function(req, res, next){
-    console.log('get');
-    //console.log('req', req.query);
-    //console.log('req', res);
-    res.send('Привет!<br />' +
-        'GET запрос инициировал процессы на стороне сервера,<br />' +
-        'примерно через ' + STOP + ' мс здесь будет ответ.<br />' +
-        'Ждите...<br />' +
-        '<script>' +
-            '(function(){' +
-                'window.location = window.location.origin + "?page=result_await"' +
-            '})()' +
-        '</script>');
+app.get('/', function(req, res){
+    if(req.query && req.query.page){
+        i++;
 
-    /*let TID = setInterval(() => {
-        currentDate = new Date();
-        console.log(currentDate);
-    }, INTERVAL);*/
+        // тики для вывода даты в консоль сервера
+        let TID = setInterval(() => {
+            currentDate = new Date();
+            console.log(currentDate, i);
+        }, INTERVAL);
 
-    /*let STOP_TID = setTimeout(() => {
-        clearInterval(TID);
-        console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
-        next();
-        clearTimeout(STOP_TID);
-        process.exit();
-    }, STOP);*/
-}, function(){
-    //console.log('next fn', this);
-    //res.send('Дата и время на момент остановки таймера (UTC): ' + currentDate);
-});
+        // таймоут для отправки даты на клиент
+        let STOP_TID = setTimeout(() => {
+            clearInterval(TID);
+            console.log('Дата и время на момент остановки таймера (UTC): ', currentDate, --i);
+            clearTimeout(STOP_TID);
+            res.send('Дата и время остановки таймера: <br />' + currentDate);
 
-app.get('/?page=result_await', function(req, res, next){
-    console.log('await');
-    let TID = setInterval(() => {
-        currentDate = new Date();
-        console.log(currentDate);
-    }, INTERVAL);
-    let STOP_TID = setTimeout(() => {
-        clearInterval(TID);
-        console.log('Дата и время на момент остановки таймера (UTC): ', currentDate);
-        next();
-        clearTimeout(STOP_TID);
-        process.exit();
-    }, STOP);
+            // выход из программы, если все клиенты получили даты остановки таймера
+            if(i === 0){
+                process.exit();
+            }
+        }, STOP);
+    }else{
+        res.send('Привет!<br />' +
+            'GET запрос инициировал процессы на стороне сервера,<br />' +
+            'примерно через ' + STOP + ' мс здесь будет ответ.<br />' +
+            'Ждите...<br />' +
+            '<script>window.location = window.location.origin + "?page=result_await"</script>');
+    }
 });
 
 app.listen(3000, function(){
