@@ -23,66 +23,32 @@ main = () => {
         shouldDelete = flag === 'y';
         destPath = dDir;
 
-        ft(sDir).then(res => {
-            console.log('Файлы скопированы: ', res);
-        });
-        // readDir(sDir, dDir).then(arr => {
-        //     console.log('readDirR res', arr);
-        //     Promise.all(arr).then(res => {
-        //         console.log('promise.all res', res);
-        //         process.exit();
-        //     });
-        // });
+        findAndCopy(sDir);
     }else{
         askFolders();
     }
 
-    function ft(src) {
-        return new Promise(resolve => {
-            let arr = [];
-            function findAndCopy(srcPath){
-                fs.stat(srcPath, (er, file) => {
-                    if(file.isDirectory()){
-                        rd(srcPath).then(res => {
-                            res.forEach(item => {
-                                console.log('item', item);
-                                findAndCopy(item);
-                            });
-                        });
-                    }else{
-                        arr.push(copyFile(srcPath, destPath));
-                    }
+    function findAndCopy(srcPath){
+        fs.stat(srcPath, (er, file) => {
+            if(file.isDirectory()){
+                // если директория запоминаем ее
+                detectedFolders.push(srcPath);
+                // и вызываем findAndCopy для каждого файла внутри
+                fs.readdir(srcPath, (er, files) => {
+                    files.forEach(fileName => {
+                        let filePath = [srcPath, fileName].join(sep);
+                        findAndCopy(filePath);
+                    });
+                });
+            }else{
+                // считаем что это файл и запоминаем его
+                detectedFiles.push(srcPath);
+                // и делаем его копию
+                copyFile(srcPath, destPath).then(res => {
+                    console.log('copyFile', res);
+                    processControl(res, detectedFiles, true);
                 });
             }
-            findAndCopy(src);
-            resolve(arr);
-        });
-    }
-    // function findAndCopy(srcPath){
-    //     fs.stat(srcPath, (er, file) => {
-    //         if(file.isDirectory()){
-    //             rd(srcPath).then(res => {
-    //                 res.forEach(item => {
-    //                     console.log('item', item);
-    //                     findAndCopy(item);
-    //                 });
-    //             });
-    //         }else{
-    //             arr.push(copyFile(srcPath, destPath));
-    //         }
-    //     });
-    // }
-
-    function rd(srcPath){
-        return new Promise((resolve) => {
-            fs.readdir(srcPath, (er, files) => {
-                let arr = [];
-                files.forEach(fileName => {
-                    let filePath = [srcPath, fileName].join(sep);
-                    arr.push(filePath);
-                });
-                resolve(arr);
-            });
         });
     }
 
@@ -118,60 +84,33 @@ main = () => {
         });
     }
 
-    function readDir(srcPath, destPath){
-        return new Promise((resolve, reject) => {
-            fs.readdir(srcPath, (er, files) => {
-                let arr = [];
-                files.forEach(fileName => {
-                    let filePath = [srcPath, fileName].join(sep);
-                    arr.push(copyFile(filePath, destPath));
-                });
-                resolve(arr);
-            });
-        });
+    function processControl(key, arr, isFile){
+        let idx = arr.indexOf(key);
+        if(idx !== -1){
+            arr.splice(idx, 1);
+
+            if(!arr.length){
+                let word = isFile ? 'Копирование' : 'Удаление';
+                console.log(word, 'завершено.');
+
+                if(shouldDelete){
+                    shouldDelete = false;
+                    removeFolders(detectedFolders.reverse());
+                }else{
+                    process.exit();
+                }
+            }
+        }
     }
 
-    // function rd(srcPath, destPath){
-    //     //return new Promise((resolve, reject) => {
-    //         fs.readdir(srcPath, (er, files) => {
-    //             files.forEach(fileName => {
-    //                 let filePath = [srcPath, fileName].join(sep);
-    //
-    //                 fs.stat(filePath, (er, file) => {
-    //                     if(file.isDirectory()){
-    //
-    //                     }else{
-    //
-    //                     }
-    //                 });
-    //             });
-    //         });
-    //     //});
-    // }
-
-    // const makeRequest = (index = 0) => {
-    //     if (!dataArr[index]) {
-    //         return Promise.resolve();
-    //     }
-    //     return new Promise((resolve, reject) => {
-    //         ajaxRequest(dataArr[index]).then(() => makeRequest(index + 1));
-    //     });
-    // };
-    // makeRequest();
-
-    // function foo(srcPath, destPath) {
-    //     function doo() {
-    //         fs.stat(srcPath, (er, file) => {
-    //             // always return a promise
-    //             if (file.isDirectory()) {
-    //                 return readDir(srcPath, destPath).then(doo);
-    //             } else {
-    //                 return Promise.resolve();
-    //             }
-    //         });
-    //     }
-    //     return doo(); // returns a promise
-    // }
+    function removeFolders(arr){
+        arr.forEach(dirPath => {
+            fs.rmdir(dirPath, er => {
+                if(er) throw er;
+                processControl(dirPath, detectedFolders);
+            });
+        })
+    }
 
     function askFolders(){
         rl.question('Введите имена исходной и итоговой папок через пробел: ', answer => {
