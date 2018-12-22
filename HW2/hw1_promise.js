@@ -29,28 +29,72 @@ main = () => {
     }
 
     function findAndCopy(srcPath){
-        fs.stat(srcPath, (er, file) => {
-            if(file.isDirectory()){
-                // если директория запоминаем ее
-                detectedFolders.push(srcPath);
-                // и вызываем findAndCopy для каждого файла внутри
-                fs.readdir(srcPath, (er, files) => {
-                    files.forEach(fileName => {
-                        let filePath = [srcPath, fileName].join(sep);
-                        findAndCopy(filePath);
-                    });
-                });
-            }else{
-                // считаем что это файл и запоминаем его
-                detectedFiles.push(srcPath);
-                // и делаем его копию
-                copyFile(srcPath, destPath).then(res => {
-                    console.log('copyFile', res);
-                    processControl(res, detectedFiles, true);
+        stat(srcPath).then(res => {
+            if(res && typeof res === 'string'){
+                processControl(res, detectedFiles, true);
+            }else if(res && typeof res === 'object' && res.length) {
+                res.forEach(item => {
+                    let filePath = [srcPath, item].join(sep);
+                    findAndCopy(filePath);
                 });
             }
         });
     }
+
+    function stat(srcPath){
+        return new Promise(resolve => {
+            fs.stat(srcPath, (er, file) => {
+                if(file.isDirectory()){
+                    // если директория запоминаем ее
+                    detectedFolders.push(srcPath);
+                    // и вызываем findAndCopy для каждого файла внутри
+                    rd(srcPath).then(files => {
+                        resolve(files);
+                    });
+                }else{
+                    // считаем что это файл и запоминаем его
+                    detectedFiles.push(srcPath);
+                    // и делаем его копию
+                    copyFile(srcPath, destPath).then(res => {
+                        console.log('copyFile', res);
+                        resolve(res);
+                    });
+                }
+            });
+        });
+    }
+
+    function rd(dir){
+        return new Promise(resolve => {
+            fs.readdir(dir, (er, files) => {
+                resolve(files);
+            });
+        });
+    }
+
+    // function findAndCopy(srcPath){
+    //     fs.stat(srcPath, (er, file) => {
+    //         if(file.isDirectory()){
+    //             // если директория запоминаем ее
+    //             detectedFolders.push(srcPath);
+    //             // и вызываем findAndCopy для каждого файла внутри
+    //             fs.readdir(srcPath, (er, files) => {
+    //                 files.forEach(fileName => {
+    //                     let filePath = [srcPath, fileName].join(sep);
+    //                     findAndCopy(filePath);
+    //                 });
+    //             });
+    //         }else{
+    //             // считаем что это файл и запоминаем его
+    //             detectedFiles.push(srcPath);
+    //             // и делаем его копию
+    //             copyFile(srcPath, destPath).then(res => {
+    //                 console.log('copyFile', res);
+    //                 processControl(res, detectedFiles, true);
+    //             });
+    //         }
+    //     });
+    // }
 
     function copyFile(srcFile, destPath){
         let pathArr = srcFile.split(sep);
