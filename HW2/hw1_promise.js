@@ -28,10 +28,42 @@ main = () => {
         askFolders();
     }
 
+    // function findAndCopy(srcPath){
+    //     fs.stat(srcPath, (er, file) => {
+    //         if(file.isDirectory()){
+    //             // если директория запоминаем ее
+    //             detectedFolders.push(srcPath);
+    //             // и вызываем findAndCopy для каждого файла внутри
+    //             fs.readdir(srcPath, (er, files) => {
+    //                 files.forEach(fileName => {
+    //                     let filePath = [srcPath, fileName].join(sep);
+    //                     findAndCopy(filePath);
+    //                 });
+    //             });
+    //         }else{
+    //             // считаем что это файл и запоминаем его
+    //             detectedFiles.push(srcPath);
+    //             // и делаем его копию
+    //             copyFile(srcPath, destPath).then(res => {
+    //                 console.log('copyFile', res);
+    //                 processControl(res, detectedFiles, true);
+    //             });
+    //         }
+    //     });
+    // }
+
     function findAndCopy(srcPath){
         stat(srcPath).then(res => {
             if(res && typeof res === 'string'){
-                processControl(res, detectedFiles, true);
+                // если нужно удалить файлы из источника
+                if(shouldDelete){
+                    deleteFile(res).then(srcPath => {
+                        //console.log(srcPath, 'удален.');
+                        processControl(res, detectedFiles, true);
+                    });
+                }else{
+                    processControl(res, detectedFiles, true);
+                }
             }else if(res && typeof res === 'object' && res.length) {
                 res.forEach(item => {
                     let filePath = [srcPath, item].join(sep);
@@ -72,30 +104,6 @@ main = () => {
         });
     }
 
-    // function findAndCopy(srcPath){
-    //     fs.stat(srcPath, (er, file) => {
-    //         if(file.isDirectory()){
-    //             // если директория запоминаем ее
-    //             detectedFolders.push(srcPath);
-    //             // и вызываем findAndCopy для каждого файла внутри
-    //             fs.readdir(srcPath, (er, files) => {
-    //                 files.forEach(fileName => {
-    //                     let filePath = [srcPath, fileName].join(sep);
-    //                     findAndCopy(filePath);
-    //                 });
-    //             });
-    //         }else{
-    //             // считаем что это файл и запоминаем его
-    //             detectedFiles.push(srcPath);
-    //             // и делаем его копию
-    //             copyFile(srcPath, destPath).then(res => {
-    //                 console.log('copyFile', res);
-    //                 processControl(res, detectedFiles, true);
-    //             });
-    //         }
-    //     });
-    // }
-
     function copyFile(srcFile, destPath){
         let pathArr = srcFile.split(sep);
         let fileName = pathArr[pathArr.length - 1];
@@ -114,16 +122,17 @@ main = () => {
                 srcStream.pipe(destStream);
 
                 destStream.on('close', () => {
-                    // если нужно удалить файлы из источника
-                    if(shouldDelete){
-                        fs.unlink(srcStream.path, err => {
-                            if(err) throw err;
-                            resolve(srcStream.path);
-                        });
-                    }else{
-                        resolve(srcStream.path);
-                    }
+                    resolve(srcStream.path);
                 });
+            });
+        });
+    }
+
+    function deleteFile(srcPath){
+        return new Promise(resolve => {
+            fs.unlink(srcPath, err => {
+                if(err) throw err;
+                resolve(srcPath);
             });
         });
     }
@@ -184,6 +193,24 @@ main = () => {
             }
         });
     }
+
+    // function removeFolders(arr){
+    //     return new Promise(resolve => {
+    //         let promisesArr = arr.map((curDirPath) => {
+    //             removeFolder(curDirPath);
+    //         });
+    //         resolve(promisesArr);
+    //     });
+    // }
+
+    // function removeFolder(dirPath){
+    //     return new Promise(resolve => {
+    //         fs.rmdir(dirPath, er => {
+    //             if(er) throw er;
+    //             resolve(dirPath);
+    //         });
+    //     });
+    // }
 };
 
 main();

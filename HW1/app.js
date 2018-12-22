@@ -65,7 +65,7 @@ main = () => {
 
             srcStream.pipe(destStream);
 
-            destStream.on('close', () => {
+            destStream.on('unpipe', () => {
                 // если нужно удалить файлы из источника
                 if(shouldDelete){
                     fs.unlink(srcStream.path, err => {

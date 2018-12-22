@@ -30,12 +30,21 @@ app.get('/', function(req, res){
             clearInterval(TID);
             console.log('Дата и время на момент остановки таймера (UTC): ', currentDate, --i);
             clearTimeout(STOP_TID);
-            res.send('Дата и время остановки таймера: <br />' + currentDate);
+            res.send('Дата и время остановки таймера: <br />' + currentDate +
+                '<br /><br />Для повторной отправки запроса нажмите клавишу "Enter"' +
+                '<script>' +
+                    'window.onkeypress = (e) => {' +
+                        'if(e.key === "Enter" || e.keyCode === 13){' +
+                            'window.location = "/"' +
+                        '}' +
+                    '};' +
+                '</script>'
+            );
 
             // выход из программы, если все клиенты получили даты остановки таймера
-            if(i === 0){
-                process.exit();
-            }
+            // if(i === 0){
+            //     process.exit();
+            // }
         }, STOP);
     }else{
         res.send('Привет!<br />' +
