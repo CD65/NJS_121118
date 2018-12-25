@@ -1,0 +1,24 @@
+extends ../_template
+
+block variables
+    - var title = '404 page'
+
+block content
+    header.header
+        .container.header__container
+            .header__top
+                a(href="/").title-name Архипов
+                    span.title-name__doter .
+                .header__social
+                    ul.social
+                        each item in social
+                            li.social__item
+                                a.social__link(href="http://")
+                                    i(class=`fab ${item}`)
+
+    div.error-div
+        h1 Error #{status} | #{error}
+        p
+          a(href="/") На главную
+
+    include ../common/_footer
