@@ -1,11 +1,11 @@
 const Koa = require('koa');
+const app = new Koa();
 const static = require('koa-static');
 const fs = require('fs');
 const session = require('koa-session');
 const config = require('./config/config.json');
-const router = require('./routes');
 
-const app = new Koa();
+const router = require('./routes');
 
 const Pug = require('koa-pug');
 const pug = new Pug({

@@ -16,9 +16,9 @@ block content
                 a.social__link(href="http://")
                   i(class=`fab ${item}`)
 
-      form(action="/login" method="POST").form-login
-        if(msglogin)
-          .status= msglogin
+      //form(action="/login" method="POST").form-login
+      form(action="/auth" method="POST").form-login
+        .status= msglogin
         .form-login__line
           label.form-login__label(for="") Привет,
           input.form-login__input(type="email" name="email" placeholder="E-MAIL")

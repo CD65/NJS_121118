@@ -5,30 +5,30 @@ module.exports.index = async ctx => {
 };
 
 module.exports.login = async ctx => {
-    // попытка ввести пароль
-    if(ctx.request.body){
-        console.log('login ctx.request.body:', ctx.request.body);
-        //console.log('login ctx:', ctx);
-        const {email, password} = ctx.request.body;
+    console.log('first login');
+    ctx.render('pages/login');
+};
 
-        const user = db.getState().user;
-        console.log('bd', user.email, '=>', email);
-        if(user.email === email){
-            ctx.render('pages/login', {
-                msgemail: 'Залогинено'
-            });
-        } else {
-            ctx.render('pages/login', {
-                msgemail: 'Ошибка'
-            });
-        }
-        console.log('eq', user.email === email);
-    }else{
-        console.log('first login');
-        ctx.render('pages/login');
+module.exports.auth = async ctx => {
+    const {email, password} = ctx.request.body;
+    console.log('auth', email, password);
+    const user = db.getState().user;
+
+    console.log('bd', user.email, '=>', email, user.email === email);
+
+    if(user.email === email){
+        //ctx.render('pages/login', {msgemail: 'Залогинено'});
+        ctx.body = {
+            msgemail: 'Залогинено',
+            status: 'OK',
+        };
+    } else {
+        //ctx.render('pages/login', {msgemail: 'Forbiden'});
+        ctx.body = {
+            msgemail: 'Forbiden',
+            status: 'Error',
+        };
     }
-
-    //ctx.render('pages/login');
 };
 
 module.exports.admin = async ctx => {

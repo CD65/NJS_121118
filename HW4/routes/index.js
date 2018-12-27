@@ -7,7 +7,7 @@ router.get('/', controllers.index);
 router.post('/', koaBody(), controllers.feedbackForm);
 
 router.get('/login', controllers.login);
-router.post('/login', koaBody(), controllers.login);
+router.post('/auth', koaBody(), controllers.auth);
 
 router.get('/admin', controllers.admin);
 
